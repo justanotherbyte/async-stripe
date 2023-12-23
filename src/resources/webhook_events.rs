@@ -511,7 +511,7 @@ impl Webhook {
     ) -> Result<Event, WebhookError> {
         // Get Stripe signature from header
         let signature = Signature::parse(sig)?;
-        println!("Failed to parse signature");
+        println!("Parsed signature");
         let signed_payload = format!("{}.{}", signature.t, payload);
 
         // Compute HMAC with the SHA256 hash function, using endpoing secret as key
@@ -521,10 +521,13 @@ impl Webhook {
         mac.update(signed_payload.as_bytes());
 
         let sig = hex::decode(signature.v1).map_err(|_| WebhookError::BadSignature)?;
-        println!("Failed to decoded hex");
+        println!("Decoded hex");
 
-        mac.verify_slice(sig.as_slice()).map_err(|_| WebhookError::BadSignature)?;
-        println!("Failed to verify slice");
+        mac.verify_slice(sig.as_slice()).map_err(|e| {
+            println!("{e:?}");
+            WebhookError::BadSignature
+        })?;
+        println!("Verified slice");
 
         // Get current timestamp to compare to signature timestamp
         if (self.current_timestamp - signature.t).abs() > 300 {
